@@ -6,12 +6,13 @@ An interactive 3D anatomy explorer built with React, Three.js, and shadcn/ui. Ta
 
 ## Explore
 
-- Orbit, zoom, and select structures directly on the body.
+- Orbit, zoom, hover, and select structures directly on the body.
 - Toggle individual systems or use skeleton and organ presets.
+- Fade surrounding tissue with x-ray, or slide a head-to-feet cross-section.
 - Move from assembled anatomy to a spaced inventory of every visible piece.
-- Search anatomical names and source identifiers.
-- Isolate a selected structure and read its details.
-- Use compact controls and detail panels on mobile.
+- Search anatomical names and source identifiers, with ranked results.
+- Isolate a selected structure, open related FMA concepts, and copy a shareable view link.
+- Use compact controls and detail panels on mobile. Keys: `/` search, `I` isolate, `X` x-ray, `1-4` views, `R` reset.
 
 ## Run locally
 
