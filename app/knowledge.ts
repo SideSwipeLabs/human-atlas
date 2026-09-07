@@ -67,6 +67,12 @@ const K:Record<string,Fact>={
  'appendix':{latin:'Appendix vermiformis',kind:'Hollow viscus',summary:'Blind diverticulum of the cecum containing lymphoid tissue. Position is variable (retrocecal, pelvic).',source:'FMA 14542.'},
  'left eye':{latin:'Oculus sinister',kind:'Special sense',summary:'Left globe in the orbit. Wall: sclera-cornea, uvea (iris, ciliary body, choroid), retina. Contents: aqueous, lens, vitreous.',function:'Vision. Extraocular muscles move the globe; lacrimal gland and drainage protect the surface.',source:'FMA 54441. BodyParts3D 4.0 includes internal coats and appendages of the eyeball.'},
  'right eye':{latin:'Oculus dexter',kind:'Special sense',summary:'Right globe in the orbit, with the same coats and refractive media as the left.',source:'FMA 54440.'},
+ 'deltoid':{latin:'Musculus deltoideus',kind:'Skeletal muscle',summary:'The triangular muscle that caps the shoulder, with clavicular, acromial, and spinal parts inserting on the deltoid tuberosity of the humerus.',function:'Acromial fibers abduct the arm after the first 15 degrees (supraspinatus starts that motion). Clavicular fibers flex and internally rotate; spinal fibers extend and externally rotate.',relations:'Lies over the rotator cuff. Origin stays on clavicle, acromion, and scapular spine; the insertion rides with the humerus when the arm is posed.',source:'Kenhub, glenohumeral joint; StatPearls, arm abductors.'},
+ 'biceps brachii':{latin:'Musculus biceps brachii',kind:'Skeletal muscle',summary:'Two-headed flexor of the arm. Long head from the supraglenoid tubercle; short head from the coracoid. Both insert on the radial tuberosity.',function:'Flexes the elbow and supinates the forearm. The long head also helps flex the shoulder.',source:'FMA 37670.'},
+ 'triceps brachii':{latin:'Musculus triceps brachii',kind:'Skeletal muscle',summary:'Three-headed extensor on the back of the arm, inserting on the olecranon.',function:'Extends the elbow. The long head also adducts and extends the shoulder.',source:'FMA 37688.'},
+ 'supraspinatus':{latin:'Musculus supraspinatus',kind:'Rotator cuff',summary:'Cuff muscle from the supraspinous fossa to the greater tubercle. It passes under the acromion.',function:'Initiates abduction of the arm (about the first 15 degrees) and compresses the humeral head into the glenoid.',source:'StatPearls, arm abductors; FMA 32521.'},
+ 'gluteus maximus':{latin:'Musculus gluteus maximus',kind:'Skeletal muscle',summary:'The largest hip extensor, from the ilium and sacrum to the IT tract and gluteal tuberosity.',function:'Extends and laterally rotates the hip. Powerful in rising from a chair and climbing.',source:'FMA 22314.'},
+ 'rectus femoris':{latin:'Musculus rectus femoris',kind:'Skeletal muscle',summary:'The only quadriceps head that crosses the hip, from AIIS to the patellar tendon.',function:'Flexes the hip and extends the knee.',source:'FMA 22430.'},
 };
 
 export const COVERAGE=[
@@ -91,6 +97,12 @@ export function factFor(name:string,system:SystemId):Fact&{side:string}{
  if(n.includes('retina'))return {...K['optic part of left retina'],side};
  if(n.includes('vitreous'))return {...K['left vitreous body'],side};
  if(n.includes('lens')&&!n.includes('ligament'))return {...K['left lens'],side};
+ if(/\bdeltoid\b/.test(n))return {...K['deltoid'],side};
+ if(/biceps brachii/.test(n))return {...K['biceps brachii'],side};
+ if(/triceps brachii/.test(n))return {...K['triceps brachii'],side};
+ if(/supraspinatus/.test(n))return {...K['supraspinatus'],side};
+ if(/gluteus maximus/.test(n))return {...K['gluteus maximus'],side};
+ if(/rectus femoris/.test(n))return {...K['rectus femoris'],side};
  const explained=EXPLANATIONS[n]??EXPLANATIONS[stripped];
  const sys=SYSTEMS.find(s=>s.id===system);
  return {kind:sys?.name??'Anatomical part',summary:explained??sys?.description??'Named structure from BodyParts3D, mapped to an FMA concept.',side,source:'BodyParts3D 4.0 / FMA.'};

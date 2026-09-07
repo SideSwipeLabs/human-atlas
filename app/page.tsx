@@ -154,7 +154,7 @@ export default function Home(){
   </section>}
   {drawer==='pose'&&<section className="drawer" aria-label="Body pose">
    <div className="drawer-head"><h2>Pose</h2><button type="button" onClick={()=>setDrawer(null)} aria-label="Close pose"><X size={16}/></button></div>
-   <p className="drawer-note">Raise an arm to open the axilla, or spread a thigh to study the medial compartment.</p>
+   <p className="drawer-note">The free limb rotates at the shoulder or hip. Scapula, pecs, and serratus stay on the chest, so the axilla opens without tearing the thorax.</p>
    <div className="chip-row wrap">{POSE_PRESETS.map(p=><button type="button" key={p.id} title={p.hint} aria-pressed={state.pose.leftArm===p.pose.leftArm&&state.pose.rightArm===p.pose.rightArm&&state.pose.leftArmFwd===p.pose.leftArmFwd&&state.pose.rightArmFwd===p.pose.rightArmFwd&&state.pose.leftLeg===p.pose.leftLeg&&state.pose.rightLeg===p.pose.rightLeg} onClick={()=>applyPose(p.pose)}>{p.name}</button>)}</div>
    <details className="fine-tune"><summary>Fine tune</summary>
    <div className="field"><div className="field-label"><label id="pose-larm">Left arm raise</label><output>{Math.round(state.pose.leftArm*100)}</output></div><Slider aria-labelledby="pose-larm" min={0} max={100} step={1} value={[Math.round(state.pose.leftArm*100)]} onValueChange={v=>setState(s=>({...s,pose:{...s.pose,leftArm:sliderValue(v)/100},rotate:false}))}/></div>

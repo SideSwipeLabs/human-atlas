@@ -61,6 +61,18 @@ for (const file of ['atlas.json']) {
   assert.equal(named['long head of left biceps femoris'],3);
   assert.equal(named['first lumbrical of left foot'],3);
   assert.equal(named['left flexor digitorum longus'],3);
+  assert.equal(named['left triquetral'],1);
+  assert.equal(named['right triquetral'],2);
+  assert.equal(named['left extensor indicis'],1);
+  assert.equal(named['left subscapularis'],1);
+  assert.equal(named['flexor retinaculum of left wrist'],1);
+  assert.equal(named['interosseous membrane of left forearm'],1);
+  assert.equal(named['abdominal part of left pectoralis major'],0);
+  assert.equal(named['left serratus anterior'],0);
+  for(const [k,g] of Object.entries(named)){
+    if(/finger|thumb/.test(k)&&!/toe|foot|hallux/.test(k))assert.ok(g===1||g===2,k);
+    if(/phalanx of .*toe|hallux|metatarsal/.test(k))assert.ok(g===3||g===4,k);
+  }
   const fib=atlas.parts.find(p=>/left fibularis longus/i.test(p.name));
   assert.equal(displaySystem(fib),'muscular');
   const tib=atlas.parts.find(p=>/left tibialis anterior/i.test(p.name));

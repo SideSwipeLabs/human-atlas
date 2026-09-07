@@ -31,27 +31,43 @@ export const POSE_PIVOTS:[number,number,number][]=[
 
 export type PoseGroupId=0|1|2|3|4|5;
 
+const arm= (cx:number):PoseGroupId=>cx>=0?1:2;
+const leg= (cx:number):PoseGroupId=>cx>=0?3:4;
+
+/**
+ * Rigid compartments around anatomical joints, not a full musculoskeletal sim.
+ * Glenohumeral pose moves the free upper limb (humerus through fingertips, cuff,
+ * arm and forearm muscles). Scapula, clavicle, pecs, serratus, and trapezius stay
+ * on the thorax (scapulothoracic rhythm is not modeled). Hip pose moves the free
+ * lower limb. Named tokens always beat bounding-box fallbacks so hanging hands
+ * never join the thighs.
+ */
 export function poseGroupOf(name:string,cx:number,cy:number):PoseGroupId{
  const n=name.toLowerCase();
  if(n==='skin'||n==='pubic hair'||n==='hair of head'||n==='eyebrow'||n==='lip')return 0;
- if(n.includes('tarsal plate')||n==='mandible'||n==='maxilla'||cy>1.50)return 5;
- if(/testis|scrotum|prostate|penis|perineum/.test(n))return 0;
- if(/toe|hallux|plantar| of (left|right) foot\b|interosseous membrane of .*leg|flexor digitorum longus|flexor digitorum brevis|extensor digitorum longus|extensor hallucis|flexor hallucis/.test(n))return cx>=0?3:4;
- if(/biceps femoris/.test(n))return cx>=0?3:4;
- if(/finger|thumb|thenar|hypothenar|pollicis|palmaris| of (left|right) hand\b/.test(n))return cx>=0?1:2;
- if(/lumbrical|interosse|flexor digitorum|extensor digitorum/.test(n))return cx>=0?1:2;
- if(/tensor fasciae latae|iliotibial|sartorius/.test(n))return 0;
- if(/scapula|clavicle|pectoralis|serratus|latissimus|subscapularis/.test(n))return 0;
- if(/(^| )(humerus|radius|ulna)\b/.test(n)&&cy>0.7)return cx>=0?1:2;
- if(/deltoid|biceps|triceps|brachialis|brachioradialis|coracobrachialis|anconeus|supraspinatus|infraspinatus|teres minor|teres major/.test(n))return cx>=0?1:2;
- if(/(^| )(femur|tibia|fibula|patella)\b/.test(n))return cx>=0?3:4;
- if(/gluteus|iliacus|obturator|piriformis|gemellus|quadratus femoris/.test(n))return 0;
- if(/vastus|gracilis|adductor|semimembranosus|semitendinosus|rectus femoris/.test(n))return cx>=0?3:4;
- if(/rectus abdominis|oblique|quadratus lumborum/.test(n))return 0;
- if(/metacarpal|carpal bone|\bscaphoid\b|\blunate\b|triquetrum|pisiform|\bhamate\b|\bcapitate\b|trapezium|trapezoid/.test(n)&&cy>0.55)return cx>=0?1:2;
- if(/metatarsal|calcane|tarsal bone|plantar/.test(n)||cy<0.48)return cx>=0?3:4;
- if(cy>0.88&&cy<1.42&&Math.abs(cx)>0.13)return cx>0?1:2;
- if(cy<0.78&&Math.abs(cx)>0.045)return cx>0?3:4;
+ if(n.includes('tarsal plate')||n==='mandible'||n==='maxilla')return 5;
+ if(/testis|scrotum|prostate|penis|perineum|coccygeus|iliococcygeus|pubococcygeus|puborectalis|anal sphincter/.test(n))return 0;
+
+ if(/toe|hallux|plantar|metatarsal|calcane|tarsal bone| of (left|right) foot\b|interosseous membrane of .*leg|fibularis|peroneus|tibialis|gastrocnemius|soleus|plantaris|popliteus|iliotibial|flexor digitorum longus|flexor digitorum brevis|extensor digitorum longus|extensor digitorum brevis|flexor accessorius/.test(n))return leg(cx);
+ if(/biceps femoris|semimembranosus|semitendinosus|vastus|gracilis|adductor|rectus femoris|sartorius|tensor fasciae latae/.test(n))return /adductor pollicis/.test(n)?arm(cx):leg(cx);
+
+ if(/finger|thumb|pollicis|thenar|hypothenar|indicis| of (left|right) hand\b|metacarpal|palmar arch|palmar digital|palmar metacarpal|princeps pollicis|radialis indicis/.test(n)&&cy>0.5)return arm(cx);
+ if(/\bscaphoid\b|\blunate\b|triquetral|triquetrum|pisiform|\bhamate\b|\bcapitate\b|trapezium|trapezoid|retinaculum of .*wrist|interosseous membrane of .*forearm/.test(n))return arm(cx);
+ if(/carpi |palmaris|pronator|supinator|brachioradialis|anconeus|extensor digitorum|flexor digitorum|lumbrical of|interossei of .*hand/.test(n))return arm(cx);
+ if(/(^| )(humerus|radius|ulna)\b/.test(n))return arm(cx);
+ if(/deltoid|triceps|brachialis|coracobrachialis|supraspinatus|infraspinatus|teres minor|teres major|subscapularis/.test(n))return arm(cx);
+ if(/\bbiceps brachii\b|\bbiceps\b/.test(n)&&!/femoris/.test(n))return arm(cx);
+ if(/brachial artery|brachial vein|basilic|cephalic vein|antebrachial|circumflex humeral|deep brachial/.test(n)&&!/brachiocephalic/.test(n))return arm(cx);
+
+ if(/scapula|clavicle|pectoralis|serratus|latissimus|subclavius|trapezius|rhomboid|levator scapulae/.test(n))return 0;
+ if(/gluteus|iliacus|obturator|piriformis|gemellus|quadratus femoris|pectineus|psoas/.test(n))return 0;
+ if(/rectus abdominis|oblique|quadratus lumborum|intercostal|diaphragm/.test(n))return 0;
+
+ if(/(^| )(femur|tibia|fibula|patella)\b/.test(n))return leg(cx);
+
+ if(cy>1.50)return 5;
+ if(Math.abs(cx)>0.16&&cy>0.68&&cy<1.45)return arm(cx);
+ if(cy<0.72&&Math.abs(cx)>0.04)return leg(cx);
  return 0;
 }
 
