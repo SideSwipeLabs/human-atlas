@@ -36,10 +36,11 @@ const leg= (cx:number):PoseGroupId=>cx>=0?3:4;
 
 /**
  * Rigid compartments around anatomical joints, not a full musculoskeletal sim.
- * Glenohumeral pose moves the free upper limb (humerus through fingertips, cuff,
- * arm and forearm muscles). Scapula, clavicle, pecs, serratus, and trapezius stay
- * on the thorax (scapulothoracic rhythm is not modeled). Hip pose moves the free
- * lower limb. Named tokens always beat bounding-box fallbacks so hanging hands
+ * Glenohumeral pose moves the free upper limb: humerus through the fingertips,
+ * plus muscles whose bellies sit on that limb (deltoid, biceps, triceps, forearm,
+ * hand). Scapular-origin cuff muscles (subscapularis, supra/infraspinatus, teres)
+ * stay on the thorax with the scapula. Pec, serratus, and trapezius stay too.
+ * Hip pose moves the free lower limb. Names beat bounding boxes so hanging hands
  * never join the thighs.
  */
 export function poseGroupOf(name:string,cx:number,cy:number):PoseGroupId{
@@ -51,15 +52,17 @@ export function poseGroupOf(name:string,cx:number,cy:number):PoseGroupId{
  if(/toe|hallux|plantar|metatarsal|calcane|tarsal bone| of (left|right) foot\b|interosseous membrane of .*leg|fibularis|peroneus|tibialis|gastrocnemius|soleus|plantaris|popliteus|iliotibial|flexor digitorum longus|flexor digitorum brevis|extensor digitorum longus|extensor digitorum brevis|flexor accessorius/.test(n))return leg(cx);
  if(/biceps femoris|semimembranosus|semitendinosus|vastus|gracilis|adductor|rectus femoris|sartorius|tensor fasciae latae/.test(n))return /adductor pollicis/.test(n)?arm(cx):leg(cx);
 
+ if(/subscapularis|supraspinatus|infraspinatus|teres minor|teres major|circumflex scapular|subscapular artery|subscapular vein|suprascapular/.test(n))return 0;
+ if(/scapula|clavicle|pectoralis|serratus|latissimus|subclavius|trapezius|rhomboid|levator scapulae/.test(n))return 0;
+
  if(/finger|thumb|pollicis|thenar|hypothenar|indicis| of (left|right) hand\b|metacarpal|palmar arch|palmar digital|palmar metacarpal|princeps pollicis|radialis indicis/.test(n)&&cy>0.5)return arm(cx);
  if(/\bscaphoid\b|\blunate\b|triquetral|triquetrum|pisiform|\bhamate\b|\bcapitate\b|trapezium|trapezoid|retinaculum of .*wrist|interosseous membrane of .*forearm/.test(n))return arm(cx);
  if(/carpi |palmaris|pronator|supinator|brachioradialis|anconeus|extensor digitorum|flexor digitorum|lumbrical of|interossei of .*hand/.test(n))return arm(cx);
  if(/(^| )(humerus|radius|ulna)\b/.test(n))return arm(cx);
- if(/deltoid|triceps|brachialis|coracobrachialis|supraspinatus|infraspinatus|teres minor|teres major|subscapularis/.test(n))return arm(cx);
+ if(/deltoid|triceps|brachialis|coracobrachialis/.test(n))return arm(cx);
  if(/\bbiceps brachii\b|\bbiceps\b/.test(n)&&!/femoris/.test(n))return arm(cx);
  if(/brachial artery|brachial vein|basilic|cephalic vein|antebrachial|circumflex humeral|deep brachial/.test(n)&&!/brachiocephalic/.test(n))return arm(cx);
 
- if(/scapula|clavicle|pectoralis|serratus|latissimus|subclavius|trapezius|rhomboid|levator scapulae/.test(n))return 0;
  if(/gluteus|iliacus|obturator|piriformis|gemellus|quadratus femoris|pectineus|psoas/.test(n))return 0;
  if(/rectus abdominis|oblique|quadratus lumborum|intercostal|diaphragm/.test(n))return 0;
 

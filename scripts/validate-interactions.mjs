@@ -64,7 +64,9 @@ for (const file of ['atlas.json']) {
   assert.equal(named['left triquetral'],1);
   assert.equal(named['right triquetral'],2);
   assert.equal(named['left extensor indicis'],1);
-  assert.equal(named['left subscapularis'],1);
+  assert.equal(named['left subscapularis'],0);
+  assert.equal(named['left supraspinatus'],0);
+  assert.equal(named['left teres major'],0);
   assert.equal(named['flexor retinaculum of left wrist'],1);
   assert.equal(named['interosseous membrane of left forearm'],1);
   assert.equal(named['abdominal part of left pectoralis major'],0);
