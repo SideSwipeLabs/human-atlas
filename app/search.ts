@@ -21,11 +21,13 @@ export function searchAnatomy(atlas:Atlas,query:string,limit=80):Concept[]{
   let score=Infinity;
   if(name===term||id===term)score=0;
   else if(id.replace(/^fma/,'')===term.replace(/^fma/,''))score=1;
+  else if(name.split(/[\s,/-]+/).includes(term))score=8+Math.min(c.name.length,80)*0.02;
   else if(name.startsWith(term))score=10+Math.min(c.name.length,80)*0.02;
   else if(name.split(/[\s,/-]+/).some(word=>word.startsWith(term)&&!STOP.has(word)))score=20+Math.min(c.name.length,80)*0.02;
   else if(name.includes(term))score=40+Math.min(c.name.length,120)*0.03;
   else if(id.includes(term))score=55;
   if(!Number.isFinite(score))continue;
+  if(/artery|vein|nerve|branch of/.test(name)&&score>1)score+=28;
   if(c.elements.length>120&&score>1)score+=40;
   else if(c.elements.length>24&&score>1)score+=Math.log2(c.elements.length);
   scored.push({c,score});

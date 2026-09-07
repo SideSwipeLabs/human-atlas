@@ -73,6 +73,10 @@ const K:Record<string,Fact>={
  'supraspinatus':{latin:'Musculus supraspinatus',kind:'Rotator cuff',summary:'Cuff muscle from the supraspinous fossa to the greater tubercle. It passes under the acromion.',function:'Initiates abduction of the arm (about the first 15 degrees) and compresses the humeral head into the glenoid.',source:'StatPearls, arm abductors; FMA 32521.'},
  'gluteus maximus':{latin:'Musculus gluteus maximus',kind:'Skeletal muscle',summary:'The largest hip extensor, from the ilium and sacrum to the IT tract and gluteal tuberosity.',function:'Extends and laterally rotates the hip. Powerful in rising from a chair and climbing.',source:'FMA 22314.'},
  'rectus femoris':{latin:'Musculus rectus femoris',kind:'Skeletal muscle',summary:'The only quadriceps head that crosses the hip, from AIIS to the patellar tendon.',function:'Flexes the hip and extends the knee.',source:'FMA 22430.'},
+ 'subscapularis':{latin:'Musculus subscapularis',kind:'Rotator cuff',summary:'The cuff muscle on the costal surface of the scapula, inserting on the lesser tubercle of the humerus. Its belly stays on the scapula when the arm is posed.',function:'Internally rotates the arm and keeps the humeral head seated in the glenoid.',source:'FMA 13413.'},
+ 'infraspinatus':{latin:'Musculus infraspinatus',kind:'Rotator cuff',summary:'From the infraspinous fossa to the greater tubercle. Like subscapularis, the belly stays on the scapula during arm pose.',function:'Externally rotates the arm.',source:'FMA 32546.'},
+ 'pectoralis major':{latin:'Musculus pectoralis major',kind:'Skeletal muscle',summary:'The fan of the anterior chest, from clavicle and sternum to the lateral lip of the bicipital groove.',function:'Adducts, flexes, and internally rotates the arm. It stays on the thorax when the free limb is posed, so the axilla can open.',source:'FMA 9628.'},
+ 'gastrocnemius':{latin:'Musculus gastrocnemius',kind:'Skeletal muscle',summary:'The two-headed calf muscle from the femoral condyles to the calcaneal tendon.',function:'Plantarflexes the ankle and flexes the knee.',source:'FMA 22531.'},
 };
 
 export const COVERAGE=[
@@ -103,6 +107,10 @@ export function factFor(name:string,system:SystemId):Fact&{side:string}{
  if(/supraspinatus/.test(n))return {...K['supraspinatus'],side};
  if(/gluteus maximus/.test(n))return {...K['gluteus maximus'],side};
  if(/rectus femoris/.test(n))return {...K['rectus femoris'],side};
+ if(/subscapularis/.test(n))return {...K['subscapularis'],side};
+ if(/infraspinatus/.test(n))return {...K['infraspinatus'],side};
+ if(/pectoralis major/.test(n))return {...K['pectoralis major'],side};
+ if(/gastrocnemius/.test(n))return {...K['gastrocnemius'],side};
  const explained=EXPLANATIONS[n]??EXPLANATIONS[stripped];
  const sys=SYSTEMS.find(s=>s.id===system);
  return {kind:sys?.name??'Anatomical part',summary:explained??sys?.description??'Named structure from BodyParts3D, mapped to an FMA concept.',side,source:'BodyParts3D 4.0 / FMA.'};

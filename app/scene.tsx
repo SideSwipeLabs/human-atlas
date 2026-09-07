@@ -78,7 +78,7 @@ vec3 qrot(vec4 q, vec3 v){ return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w *
     shader.fragmentShader='uniform float clipY; uniform float clipAxis; uniform vec3 irisCenter; varying float partVisible; varying float partSelected; varying float partHovered; varying float partDimmed; varying vec3 atlasPos; varying vec3 atlasRest;\n'+shader.fragmentShader;
     let clip='if (partVisible < 0.5) discard;\nif (clipY < 4.0) { float coord = mix(mix(atlasPos.y, atlasPos.x, step(0.5, clipAxis)), atlasPos.z, step(1.5, clipAxis)); if (coord > clipY) discard; }';
     shader.fragmentShader=shader.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\n'+clip);
-    let color='\nif (!gl_FrontFacing) diffuseColor.rgb *= 0.48;\nif (clipY < 4.0) { float capCoord = mix(mix(atlasPos.y, atlasPos.x, step(0.5, clipAxis)), atlasPos.z, step(1.5, clipAxis)); if (abs(capCoord - clipY) < 0.004) diffuseColor.rgb *= 0.55; }\ndiffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.78, 0.80, 0.82), partDimmed * 0.55);\ndiffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.93, 0.62, 0.28), partHovered * (1.0 - partSelected) * 0.45);\ndiffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.22, 0.71, 0.64), partSelected * 0.28);';
+    let color='\nif (!gl_FrontFacing) diffuseColor.rgb *= 0.48;\nif (clipY < 4.0) { float capCoord = mix(mix(atlasPos.y, atlasPos.x, step(0.5, clipAxis)), atlasPos.z, step(1.5, clipAxis)); if (abs(capCoord - clipY) < 0.004) diffuseColor.rgb *= 0.55; }\nfloat originMark = partDimmed * (1.0 - step(0.8, partDimmed)); float insertMark = step(0.8, partDimmed);\ndiffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.82, 0.62, 0.16), originMark * (1.0 - partSelected) * 0.7);\ndiffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.93, 0.86, 0.62), insertMark * (1.0 - partSelected) * 0.62);\ndiffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.93, 0.62, 0.28), partHovered * (1.0 - partSelected) * 0.45);\ndiffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.22, 0.71, 0.64), partSelected * 0.28);';
     if(kind==='iris')color+='\nvec3 irisDelta = atlasRest - irisCenter; irisDelta.z *= 0.2; if (length(irisDelta) < 0.0022) diffuseColor.rgb = vec3(0.03, 0.02, 0.02);';
     shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>'+color);
    };
@@ -281,16 +281,16 @@ vec3 qrot(vec4 q, vec3 v){ return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w *
    if(settling){lastState=null;dirty=true;}
    if(hoverPending&&ready){hoverPending=false;const hit=pickAt(hoverX,hoverY);showHover(hit.found,hit.x,hit.y);}
    if(s.labels!==lastState?.labels)dirty=true;
-   const changed=lastState?.visible!==s.visible||lastState?.selected!==s.selected||lastState?.isolate!==s.isolate||lastState?.xray!==s.xray||lastState?.skin!==s.skin||lastState?.hidden!==s.hidden||lastState?.pose!==s.pose||settling||lastState===null;
+   const changed=lastState?.visible!==s.visible||lastState?.selected!==s.selected||lastState?.isolate!==s.isolate||lastState?.xray!==s.xray||lastState?.skin!==s.skin||lastState?.hidden!==s.hidden||lastState?.pose!==s.pose||lastState?.origins!==s.origins||lastState?.insertions!==s.insertions||settling||lastState===null;
    if(changed){
-    const visible=new Set(s.visible),selection=new Set(s.selected),hidden=new Set(s.hidden);
+    const visible=new Set(s.visible),selection=new Set(s.selected),hidden=new Set(s.hidden),origins=new Set(s.origins??[]),insertions=new Set(s.insertions??[]);
     atlas.parts.forEach((p,i)=>{
      const tissue=tissueOf(p),sys=displaySystem(p);
-     const selected=selection.has(p.id);const shown=visible.has(sys)||selected;
-     const hideCovering=isCovering(tissue)||(!!s.xray&&!selected&&(sys==='muscular'||sys==='connective'))||hidden.has(p.id)||(!!s.isolate&&!selected);
-     const dim=false;
+     const selected=selection.has(p.id);const anchored=origins.has(p.id)||insertions.has(p.id);const shown=visible.has(sys)||selected||anchored;
+     const hideCovering=isCovering(tissue)||(!!s.xray&&!selected&&!anchored&&(sys==='muscular'||sys==='connective'))||hidden.has(p.id)||(!!s.isolate&&!selected&&!anchored);
+     const attach=origins.has(p.id)?128:insertions.has(p.id)?255:0;
      data.set([dispOff[i*3],dispOff[i*3+1],dispOff[i*3+2],shown&&!hideCovering?1:0],i*4);
-     selectedData[i*4]=selected&&!s.isolate?255:0;selectedData[i*4+1]=i===hoverIndex?255:0;selectedData[i*4+2]=dim?255:0;selectedData[i*4+3]=groups[i];
+     selectedData[i*4]=selected&&!s.isolate?255:0;selectedData[i*4+1]=i===hoverIndex?255:0;selectedData[i*4+2]=attach;selectedData[i*4+3]=groups[i];
      writePicker(i);
     });partTexture.needsUpdate=true;selectionTexture.needsUpdate=true;lastState=s;lastHover=hoverIndex;dirty=true;
    }else if(hoverIndex!==lastHover){

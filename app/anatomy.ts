@@ -23,11 +23,13 @@ export interface Concept {id:string;name:string;elements:string[]}
 export interface Atlas {version:string;sex?:'male';source?:string;scope?:string;parts:Part[];concepts:Concept[];chunks:{url:string;bytes:number;gzip?:string;gzipBytes?:number}[];triangles:number}
 export type View = 'three-quarter'|'front'|'back'|'side';
 export type ClipPlane='transverse'|'sagittal'|'coronal';
-export type RegionId='full'|'head'|'thorax'|'abdomen'|'pelvis'|'arm'|'leg';
+export type RegionId='full'|'head'|'thorax'|'abdomen'|'pelvis'|'arm'|'leg'|'axilla'|'femoral'|'mediastinum'|'perineum';
 export interface SceneState {
  inspectorOpen?:boolean;
  visible:SystemId[];
  selected:string[];
+ origins?:string[];
+ insertions?:string[];
  hidden:string[];
  isolate:boolean;
  view:View;

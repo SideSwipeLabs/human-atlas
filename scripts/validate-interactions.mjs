@@ -31,6 +31,7 @@ for (const file of ['atlas.json']) {
   const results=find.execute({query:'femur'});
   assert.ok(results.length>0);
   assert.equal(searchAnatomy(atlas,'heart')[0].name.toLowerCase(),'heart');
+  assert.ok(!/artery|vein/.test(searchAnatomy(atlas,'deltoid')[0].name.toLowerCase()));
   assert.ok(searchAnatomy(atlas,'femur').some(c=>c.name.toLowerCase()==='femur'||c.name.toLowerCase().includes('femur')));
   const ranked=searchAnatomy(atlas,'left femur');
   assert.equal(ranked[0].name.toLowerCase(),'left femur');
@@ -41,6 +42,7 @@ for (const file of ['atlas.json']) {
   assert.equal(parsed.xray,true);
   assert.equal(parsed.isolate,true);
   assert.equal(parsed.pose?.leftArm,.72);
+  assert.equal(parseHash('#region=axilla&pose=arms-up').region,'axilla');
   assert.deepEqual(parsed.systems,['skeletal']);
   assert.equal(parseHash('').concept,undefined);
   assert.equal(serializeHash({state:{view:'three-quarter',xray:false,clip:0,isolate:false,visible:DEFAULT_VISIBLE,pose:{leftArm:0,rightArm:0,leftArmFwd:0,rightArmFwd:0,leftLeg:0,rightLeg:0,head:0}},defaultVisible:DEFAULT_VISIBLE}),'');

@@ -1,4 +1,4 @@
-import type {SystemId} from './anatomy';
+import type {RegionId,SystemId} from './anatomy';
 
 export const ALL_SYSTEMS:SystemId[]=['sensory','skeletal','muscular','connective','cardiac','respiratory','digestive','urinary','lymphatic','endocrine','reproductive','arterial','venous','nervous'];
 
@@ -10,8 +10,7 @@ export const DISSECTION:{id:string;name:string;systems:SystemId[]}[]=[
  {id:'vessels',name:'Vessels',systems:['arterial','venous','nervous','skeletal']},
 ];
 
-export type RegionId='full'|'head'|'thorax'|'abdomen'|'pelvis'|'arm'|'leg';
-export const REGIONS:{id:RegionId;name:string;target:[number,number,number];distance:number}[]=[
+export const REGIONS:{id:RegionId;name:string;target:[number,number,number];distance:number;pose?:string}[]=[
  {id:'full',name:'Whole body',target:[0,.85,0],distance:4},
  {id:'head',name:'Head',target:[0,1.58,.04],distance:.55},
  {id:'thorax',name:'Thorax',target:[0,1.22,0],distance:.95},
@@ -19,6 +18,10 @@ export const REGIONS:{id:RegionId;name:string;target:[number,number,number];dist
  {id:'pelvis',name:'Pelvis',target:[0,.88,0],distance:.75},
  {id:'arm',name:'Upper limb',target:[.18,1.18,0],distance:1.05},
  {id:'leg',name:'Lower limb',target:[.08,.42,0],distance:1.35},
+ {id:'axilla',name:'Axilla',target:[.16,1.32,.04],distance:.7,pose:'arms-up'},
+ {id:'femoral',name:'Femoral triangle',target:[.07,.94,.05],distance:.65,pose:'legs-apart'},
+ {id:'mediastinum',name:'Mediastinum',target:[0,1.22,.05],distance:.68},
+ {id:'perineum',name:'Perineum',target:[0,.78,.1],distance:.55,pose:'legs-apart'},
 ];
 
 export type ClipPlane='transverse'|'sagittal'|'coronal';

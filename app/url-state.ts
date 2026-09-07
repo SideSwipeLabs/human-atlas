@@ -1,6 +1,7 @@
-import type {ClipPlane,PoseState,SceneState,SystemId,View} from './anatomy';
+import type {ClipPlane,PoseState,RegionId,SceneState,SystemId,View} from './anatomy';
 
 const VIEWS=new Set<View>(['three-quarter','front','back','side']);
+const REGIONS=new Set<RegionId>(['full','head','thorax','abdomen','pelvis','arm','leg','axilla','femoral','mediastinum','perineum']);
 const SYSTEMS=new Set<SystemId>(['skeletal','muscular','arterial','venous','nervous','digestive','respiratory','urinary','reproductive','lymphatic','endocrine','integumentary','connective','sensory','cardiac']);
 const REST:PoseState={leftArm:0,rightArm:0,leftArmFwd:0,rightArmFwd:0,leftLeg:0,rightLeg:0,head:0};
 const PRESETS:Record<string,PoseState>={
@@ -21,6 +22,7 @@ export interface AtlasHash {
  plane?:ClipPlane;
  systems?:SystemId[];
  pose?:PoseState;
+ region?:RegionId;
 }
 
 function ratio(value:string|null){
@@ -51,10 +53,11 @@ export function parseHash(hash:string):AtlasHash{
   plane:params.get('plane')==='sagittal'||params.get('plane')==='coronal'?params.get('plane') as ClipPlane:undefined,
   systems:systems?.length?systems:undefined,
   pose:poseId&&PRESETS[poseId]?PRESETS[poseId]:undefined,
+  region:params.get('region')&&REGIONS.has(params.get('region') as RegionId)?params.get('region') as RegionId:undefined,
  };
 }
 
-export function serializeHash(input:{concept?:string|null;part?:string|null;state:Pick<SceneState,'view'|'xray'|'clip'|'isolate'|'visible'|'pose'|'plane'>;defaultVisible:SystemId[]}):string{
+export function serializeHash(input:{concept?:string|null;part?:string|null;state:Pick<SceneState,'view'|'xray'|'clip'|'isolate'|'visible'|'pose'|'plane'|'region'>;defaultVisible:SystemId[]}):string{
  const params=new URLSearchParams();
  if(input.concept)params.set('c',input.concept);
  else if(input.part)params.set('p',input.part);
@@ -66,6 +69,7 @@ export function serializeHash(input:{concept?:string|null;part?:string|null;stat
  const pose=input.state.pose??REST;
  const poseId=Object.keys(PRESETS).find(id=>samePose(PRESETS[id],pose));
  if(poseId)params.set('pose',poseId);
+ if(input.state.region&&input.state.region!=='full')params.set('region',input.state.region);
  const same=input.state.visible.length===input.defaultVisible.length&&input.defaultVisible.every(id=>input.state.visible.includes(id));
  if(!same)params.set('sys',input.state.visible.join(','));
  const query=params.toString();
