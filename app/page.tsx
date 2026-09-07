@@ -14,7 +14,7 @@ import {parseHash,serializeHash} from './url-state';
 import {buildConceptIndex,relatedConcepts} from './related';
 import {factFor,COVERAGE} from './knowledge';
 import {DISSECTION,REGIONS,CLIP_PLANES} from './dissection';
-import {POSE_PRESETS,REST_POSE,poseIsRest,type PoseState} from './pose';
+import {POSE_PRESETS,REST_POSE,poseEquals,poseIsRest,type PoseState} from './pose';
 import {displaySystem,focusElements,promoteConcept,VISCERAL_SYSTEMS} from './classify';
 import {isCovering,tissueOf} from './tissue';
 import {attachmentFor} from './attach';
@@ -109,7 +109,7 @@ export default function Home(){
   const url=`${location.pathname}${location.search}${serializeHash({concept:chosen?.id,part:chosen?undefined:state.selected[0],state,defaultVisible:DEFAULT_VISIBLE})}`;
   try{await navigator.clipboard.writeText(`${location.origin}${url}`);setCopied(true);window.setTimeout(()=>setCopied(false),1600);}catch{/* ignore */}
  };
- const applyPose=(pose:PoseState)=>setState(s=>({...s,pose:{...pose},rotate:false}));
+ const applyPose=(pose:PoseState)=>setState(s=>({...s,pose:{...pose},rotate:false,reset:s.reset+1}));
  const extract=()=>setState(s=>s.selected.length?{...s,extractNonce:s.extractNonce+1,rotate:false}:s);
  const hideSelected=()=>setState(s=>s.selected.length?{...s,hidden:[...new Set([...s.hidden,...s.selected])],selected:[],isolate:false}:s);
  const restoreHidden=(id?:string)=>setState(s=>({...s,hidden:id?s.hidden.filter(x=>x!==id):[]}));
@@ -182,8 +182,8 @@ export default function Home(){
   </section>}
   {drawer==='pose'&&<section className="drawer" aria-label="Body pose">
    <div className="drawer-head"><h2>Pose</h2><button type="button" onClick={()=>setDrawer(null)} aria-label="Close pose"><X size={16}/></button></div>
-   <p className="drawer-note">The free limb rotates at the shoulder or hip. Scapula, pecs, and serratus stay on the chest, so the axilla opens without tearing the thorax.</p>
-   <div className="chip-row wrap">{POSE_PRESETS.map(p=><button type="button" key={p.id} title={p.hint} aria-pressed={state.pose.leftArm===p.pose.leftArm&&state.pose.rightArm===p.pose.rightArm&&state.pose.leftArmFwd===p.pose.leftArmFwd&&state.pose.rightArmFwd===p.pose.rightArmFwd&&state.pose.leftLeg===p.pose.leftLeg&&state.pose.rightLeg===p.pose.rightLeg} onClick={()=>applyPose(p.pose)}>{p.name}</button>)}</div>
+   <p className="drawer-note">The arm abducts at the glenohumeral joint while the scapula rotates about 1:2 with it. Pecs and deltoid stretch from origin to insertion.</p>
+   <div className="chip-row wrap">{POSE_PRESETS.map(p=><button type="button" key={p.id} title={p.hint} className={poseEquals(state.pose,p.pose)?'on':''} aria-pressed={poseEquals(state.pose,p.pose)} onClick={()=>applyPose(p.pose)}>{p.name}</button>)}</div>
    <details className="fine-tune"><summary>Fine tune</summary>
    <div className="field"><div className="field-label"><label id="pose-larm">Left arm raise</label><output>{Math.round(state.pose.leftArm*100)}</output></div><Slider aria-labelledby="pose-larm" min={0} max={100} step={1} value={[Math.round(state.pose.leftArm*100)]} onValueChange={v=>setState(s=>({...s,pose:{...s.pose,leftArm:sliderValue(v)/100},rotate:false}))}/></div>
    <div className="field"><div className="field-label"><label id="pose-rarm">Right arm raise</label><output>{Math.round(state.pose.rightArm*100)}</output></div><Slider aria-labelledby="pose-rarm" min={0} max={100} step={1} value={[Math.round(state.pose.rightArm*100)]} onValueChange={v=>setState(s=>({...s,pose:{...s.pose,rightArm:sliderValue(v)/100},rotate:false}))}/></div>

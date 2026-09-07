@@ -10,7 +10,7 @@ export interface Attachment {
 }
 
 const RULES:{test:RegExp;origin:string[];insertion:string[];action:string}[]=[
- {test:/\bdeltoid\b/,origin:['clavicle','scapula'],insertion:['humerus'],action:'Abducts, flexes, and extends the arm at the shoulder.'},
+ {test:/part of .*deltoid|\bdeltoid$/,origin:['clavicle','scapula'],insertion:['humerus'],action:'Abducts, flexes, and extends the arm at the shoulder.'},
  {test:/subscapularis/,origin:['scapula'],insertion:['humerus'],action:'Internally rotates the arm and seats the humeral head.'},
  {test:/supraspinatus/,origin:['scapula'],insertion:['humerus'],action:'Starts abduction of the arm (first 15 degrees).'},
  {test:/infraspinatus/,origin:['scapula'],insertion:['humerus'],action:'Externally rotates the arm.'},

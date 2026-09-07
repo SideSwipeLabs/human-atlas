@@ -7,7 +7,7 @@ import {decodeModelResponse} from './model-download';
 import {PointerTap} from './pointer-tap';
 import {LABEL_PARTS,SYSTEMS,type Atlas,type SceneState} from './anatomy';
 import {clipAxis,clipLimit,REGIONS} from './dissection';
-import {POSE_PIVOTS,poseGroupOf,poseQuaternions} from './pose';
+import {POSE_PIVOTS,poseGroupOf,poseIsRest,poseQuaternions,skinWeight,skinningOf} from './pose';
 import {displaySystem,organLook} from './classify';
 import {isCovering,tissueOf,uniqueMesh} from './tissue';
 
@@ -58,7 +58,8 @@ export default function AnatomyScene({atlas,state,onSelect,onProgress,onError,on
    return {index,node};
   }).filter(l=>l.index>=0);
   const projected=new T.Vector3();
-  const pickerQ=new T.Quaternion(),pickerM=new T.Matrix4(),pickerR=new T.Matrix4(),pickerNeg=new T.Matrix4();
+  const pickerQ=new T.Quaternion(),pickerM=new T.Matrix4(),pickerR=new T.Matrix4(),pickerNeg=new T.Matrix4(),pickerT=new T.Matrix4();
+  const ghWorld=new T.Vector3();
   const camRight=new T.Vector3(),camUp=new T.Vector3(),radial=new T.Vector3();
   type Drag={id:number;indices:number[];x:number;y:number;moved:boolean};
   let drag:Drag|null=null;
@@ -66,15 +67,18 @@ export default function AnatomyScene({atlas,state,onSelect,onProgress,onError,on
    m.onBeforeCompile=shader=>{
     shader.uniforms.partState={value:partTexture};shader.uniforms.selectionState={value:selectionTexture};shader.uniforms.stateWidth={value:width};shader.uniforms.clipY=clipYUniform;shader.uniforms.clipAxis=clipAxisUniform;
     shader.uniforms.irisCenter={value:irisCenter??new T.Vector3()};
-    shader.uniforms.poseQ0={value:poseQs[0]};shader.uniforms.poseQ1={value:poseQs[1]};shader.uniforms.poseQ2={value:poseQs[2]};shader.uniforms.poseQ3={value:poseQs[3]};shader.uniforms.poseQ4={value:poseQs[4]};shader.uniforms.poseQ5={value:poseQs[5]};
-    shader.uniforms.poseP0={value:posePs[0]};shader.uniforms.poseP1={value:posePs[1]};shader.uniforms.poseP2={value:posePs[2]};shader.uniforms.poseP3={value:posePs[3]};shader.uniforms.poseP4={value:posePs[4]};shader.uniforms.poseP5={value:posePs[5]};
-    shader.vertexShader=`attribute float partIndex; uniform sampler2D partState; uniform sampler2D selectionState; uniform float stateWidth; uniform vec4 poseQ0; uniform vec4 poseQ1; uniform vec4 poseQ2; uniform vec4 poseQ3; uniform vec4 poseQ4; uniform vec4 poseQ5; uniform vec3 poseP0; uniform vec3 poseP1; uniform vec3 poseP2; uniform vec3 poseP3; uniform vec3 poseP4; uniform vec3 poseP5; varying float partVisible; varying float partSelected; varying float partHovered; varying float partDimmed; varying vec3 atlasPos; varying vec3 atlasRest;
-vec4 poseQ(float g){ if (g < 0.5) return poseQ0; if (g < 1.5) return poseQ1; if (g < 2.5) return poseQ2; if (g < 3.5) return poseQ3; if (g < 4.5) return poseQ4; return poseQ5; }
-vec3 poseP(float g){ if (g < 0.5) return poseP0; if (g < 1.5) return poseP1; if (g < 2.5) return poseP2; if (g < 3.5) return poseP3; if (g < 4.5) return poseP4; return poseP5; }
+    shader.uniforms.poseQ0={value:poseQs[0]};shader.uniforms.poseQ1={value:poseQs[1]};shader.uniforms.poseQ2={value:poseQs[2]};shader.uniforms.poseQ3={value:poseQs[3]};shader.uniforms.poseQ4={value:poseQs[4]};shader.uniforms.poseQ5={value:poseQs[5]};shader.uniforms.poseQ6={value:poseQs[6]};shader.uniforms.poseQ7={value:poseQs[7]};
+    shader.uniforms.poseP0={value:posePs[0]};shader.uniforms.poseP1={value:posePs[1]};shader.uniforms.poseP2={value:posePs[2]};shader.uniforms.poseP3={value:posePs[3]};shader.uniforms.poseP4={value:posePs[4]};shader.uniforms.poseP5={value:posePs[5]};shader.uniforms.poseP6={value:posePs[6]};shader.uniforms.poseP7={value:posePs[7]};
+    shader.vertexShader=`attribute float partIndex; attribute float skinGroup; attribute float skinWeight; uniform sampler2D partState; uniform sampler2D selectionState; uniform float stateWidth; uniform vec4 poseQ0; uniform vec4 poseQ1; uniform vec4 poseQ2; uniform vec4 poseQ3; uniform vec4 poseQ4; uniform vec4 poseQ5; uniform vec4 poseQ6; uniform vec4 poseQ7; uniform vec3 poseP0; uniform vec3 poseP1; uniform vec3 poseP2; uniform vec3 poseP3; uniform vec3 poseP4; uniform vec3 poseP5; uniform vec3 poseP6; uniform vec3 poseP7; varying float partVisible; varying float partSelected; varying float partHovered; varying float partDimmed; varying vec3 atlasPos; varying vec3 atlasRest;
+vec4 poseQ(float g){ if (g < 0.5) return poseQ0; if (g < 1.5) return poseQ1; if (g < 2.5) return poseQ2; if (g < 3.5) return poseQ3; if (g < 4.5) return poseQ4; if (g < 5.5) return poseQ5; if (g < 6.5) return poseQ6; return poseQ7; }
+vec3 poseP(float g){ if (g < 0.5) return poseP0; if (g < 1.5) return poseP1; if (g < 2.5) return poseP2; if (g < 3.5) return poseP3; if (g < 4.5) return poseP4; if (g < 5.5) return poseP5; if (g < 6.5) return poseP6; return poseP7; }
 vec3 qrot(vec4 q, vec3 v){ return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v); }
+vec3 poseX(vec3 v, float g){ if (g > 0.5 && g < 2.5) { float sg = g < 1.5 ? 6.0 : 7.0; vec3 vs = qrot(poseQ(sg), v - poseP(sg)) + poseP(sg); vec3 gh = qrot(poseQ(sg), poseP(g) - poseP(sg)) + poseP(sg); return qrot(poseQ(g), vs - gh) + gh; } return qrot(poseQ(g), v - poseP(g)) + poseP(g); }
+vec3 poseXN(vec3 n, float g){ if (g > 0.5 && g < 2.5) { float sg = g < 1.5 ? 6.0 : 7.0; return qrot(poseQ(g), qrot(poseQ(sg), n)); } return qrot(poseQ(g), n); }
+vec3 poseSkin(vec3 v, float g0, float g1, float w){ return mix(poseX(v, g0), poseX(v, g1), w); }
 `+shader.vertexShader;
-    shader.vertexShader=shader.vertexShader.replace('#include <beginnormal_vertex>','#include <beginnormal_vertex>\nvec2 poseUv = vec2((partIndex + 0.5) / stateWidth, 0.5); float poseGroup = texture2D(selectionState, poseUv).a * 255.0; objectNormal = qrot(poseQ(poseGroup), objectNormal);');
-    shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvec2 stateUv = vec2((partIndex + 0.5) / stateWidth, 0.5); vec4 state = texture2D(partState, stateUv); atlasRest = transformed; float g = texture2D(selectionState, stateUv).a * 255.0; vec3 pivot = poseP(g); transformed = qrot(poseQ(g), transformed - pivot) + pivot; transformed += state.xyz; atlasPos = transformed; partVisible = state.w; vec4 selectSample = texture2D(selectionState, stateUv); partSelected = selectSample.r; partHovered = selectSample.g; partDimmed = selectSample.b;');
+    shader.vertexShader=shader.vertexShader.replace('#include <beginnormal_vertex>','#include <beginnormal_vertex>\nvec2 poseUv = vec2((partIndex + 0.5) / stateWidth, 0.5); float poseGroup = texture2D(selectionState, poseUv).a * 255.0; objectNormal = normalize(mix(poseXN(objectNormal, poseGroup), poseXN(objectNormal, skinGroup), skinWeight));');
+    shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvec2 stateUv = vec2((partIndex + 0.5) / stateWidth, 0.5); vec4 state = texture2D(partState, stateUv); atlasRest = transformed; float g = texture2D(selectionState, stateUv).a * 255.0; transformed = poseSkin(transformed, g, skinGroup, skinWeight); transformed += state.xyz; atlasPos = transformed; partVisible = state.w; vec4 selectSample = texture2D(selectionState, stateUv); partSelected = selectSample.r; partHovered = selectSample.g; partDimmed = selectSample.b;');
     shader.fragmentShader='uniform float clipY; uniform float clipAxis; uniform vec3 irisCenter; varying float partVisible; varying float partSelected; varying float partHovered; varying float partDimmed; varying vec3 atlasPos; varying vec3 atlasRest;\n'+shader.fragmentShader;
     let clip='if (partVisible < 0.5) discard;\nif (clipY < 4.0) { float coord = mix(mix(atlasPos.y, atlasPos.x, step(0.5, clipAxis)), atlasPos.z, step(1.5, clipAxis)); if (coord > clipY) discard; }';
     shader.fragmentShader=shader.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\n'+clip);
@@ -126,6 +130,19 @@ vec3 qrot(vec4 q, vec3 v){ return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w *
     g.computeBoundingBox();if(g.boundingBox)bounds[i].copy(g.boundingBox);
     g.computeBoundingSphere();const pick=new T.Mesh(g);pick.matrixAutoUpdate=false;pickers[i]=pick;geometries.push(g);
     g.setAttribute('partIndex',new T.BufferAttribute(new Float32Array(p.vertexCount).fill(i),1));
+    const skin=skinningOf(p.name,centers[i].x);
+    const sg=new Float32Array(p.vertexCount),sw=new Float32Array(p.vertexCount);
+    if(skin){
+     const pos=g.getAttribute('position');
+     for(let v=0;v<p.vertexCount;v++){
+      const t=skin.axis===0?Math.abs(pos.getX(v)):pos.getY(v);
+      sg[v]=skin.extra;sw[v]=skinWeight(t,skin.a,skin.b);
+     }
+    }else{
+     sg.fill(groups[i]);
+    }
+    g.setAttribute('skinGroup',new T.BufferAttribute(sg,1));
+    g.setAttribute('skinWeight',new T.BufferAttribute(sw,1));
     const tissue=tissueOf(p);
     const look=organLook(p.name,displaySystem(p));
     if(uniqueMesh(tissue)){
@@ -146,8 +163,9 @@ vec3 qrot(vec4 q, vec3 v){ return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w *
   (async()=>{try{let cursor=0;await Promise.all(Array.from({length:3},async()=>{while(cursor<atlas.chunks.length){const i=cursor++;await loadChunk(i);}}));if(!disposed){ready=true;dirty=true;}}catch(e){if(!disposed)onError(e instanceof Error?e.message:'Could not load the anatomy.');}})();
   const viewDir=(view:string)=>view==='front'?new T.Vector3(0,.02,1):view==='back'?new T.Vector3(0,.02,-1):view==='side'?new T.Vector3(1,.02,0):new T.Vector3(.35,.06,1).normalize();
   const fit=(view:string)=>{
-   const mobile=el.clientWidth<768,distance=mobile?Math.max(3.2,1.35*el.clientHeight/Math.max(160,el.clientHeight-220)/(2*Math.tan(T.MathUtils.degToRad(camera.fov/2)))):2.7;
-   orbit.target.set(0,mobile?.92:1.02,0);camera.position.copy(orbit.target).addScaledVector(viewDir(view),distance);orbit.update();dirty=true;
+   const mobile=el.clientWidth<768,posed=!poseIsRest(latest.current.pose);
+   const distance=mobile?Math.max(3.2,1.35*el.clientHeight/Math.max(160,el.clientHeight-220)/(2*Math.tan(T.MathUtils.degToRad(camera.fov/2)))):posed?3.2:2.7;
+   orbit.target.set(0,mobile?.92:posed?1.08:1.02,0);camera.position.copy(orbit.target).addScaledVector(viewDir(view),distance);orbit.update();dirty=true;
   };
   const frameRegion=(id:string,view:string)=>{
    const region=REGIONS.find(r=>r.id===id);if(!region||region.id==='full'){fit(view);return;}
@@ -156,16 +174,27 @@ vec3 qrot(vec4 q, vec3 v){ return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w *
   const resize=()=>{lastState=null;renderer.setPixelRatio(Math.min(devicePixelRatio,el.clientWidth<768||el.clientHeight<600?1.5:2));camera.aspect=el.clientWidth/el.clientHeight;camera.updateProjectionMatrix();renderer.setSize(el.clientWidth,el.clientHeight);dirty=true;};const observer=new ResizeObserver(resize);observer.observe(el);
   const raycaster=new T.Raycaster(),pointer=new T.Vector2(),tap=new PointerTap(),worldBox=new T.Box3(),hitPoint=new T.Vector3();
   const clipY=()=>{const s=latest.current;return clipLimit(s.plane??'transverse',s.clip??0,!!s.isolate);};
+  const spinAround=(m:T.Matrix4,q:T.Vector4,p:T.Vector3,pre:boolean)=>{
+   pickerQ.set(q.x,q.y,q.z,q.w);
+   pickerT.makeTranslation(p.x,p.y,p.z);
+   pickerR.makeRotationFromQuaternion(pickerQ);
+   pickerNeg.makeTranslation(-p.x,-p.y,-p.z);
+   if(pre)m.premultiply(pickerNeg).premultiply(pickerR).premultiply(pickerT);
+   else m.multiply(pickerT).multiply(pickerR).multiply(pickerNeg);
+  };
   const writePicker=(i:number)=>{
    const mesh=pickers[i];if(!mesh)return;
-   const g=groups[i],q=poseQs[g],p=posePs[g];
-   pickerQ.set(q.x,q.y,q.z,q.w);
-   pickerM.makeTranslation(p.x+dispOff[i*3],p.y+dispOff[i*3+1],p.z+dispOff[i*3+2]);
-   pickerR.makeRotationFromQuaternion(pickerQ);
-   pickerM.multiply(pickerR);
-   pickerNeg.makeTranslation(-p.x,-p.y,-p.z);
-   pickerM.multiply(pickerNeg);
-   mesh.matrix.copy(pickerM);mesh.matrixWorld.copy(pickerM);
+   const g=groups[i];
+   pickerM.identity();
+   if(g===1||g===2){
+    const sg=g===1?6:7;
+    spinAround(pickerM,poseQs[sg],posePs[sg],false);
+    ghWorld.copy(posePs[g]).applyMatrix4(pickerM);
+    spinAround(pickerM,poseQs[g],ghWorld,true);
+   }else spinAround(pickerM,poseQs[g],posePs[g],false);
+   pickerT.makeTranslation(dispOff[i*3],dispOff[i*3+1],dispOff[i*3+2]);
+   pickerM.premultiply(pickerT);
+   mesh.matrix.copy(pickerM);mesh.matrixWorld.copy(pickerM);mesh.matrixWorldNeedsUpdate=false;
   };
   const pickAt=(clientX:number,clientY:number)=>{
    const rect=renderer.domElement.getBoundingClientRect();
@@ -264,7 +293,7 @@ vec3 qrot(vec4 q, vec3 v){ return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w *
    if(disposed)return;frame=requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05),s=latest.current;
    const yLimit=clipY();const axis=clipAxis(s.plane??'transverse');if(yLimit!==lastClip||clipAxisUniform.value!==axis){clipYUniform.value=yLimit;clipAxisUniform.value=axis;lastClip=yLimit;dirty=true;}
    const qs=poseQuaternions(s.pose);
-   for(let g=0;g<6;g++){if(poseQs[g].x!==qs[g].x||poseQs[g].y!==qs[g].y||poseQs[g].z!==qs[g].z||poseQs[g].w!==qs[g].w){poseQs[g].set(qs[g].x,qs[g].y,qs[g].z,qs[g].w);dirty=true;lastState=null;}}
+   for(let g=0;g<poseQs.length;g++){if(poseQs[g].x!==qs[g].x||poseQs[g].y!==qs[g].y||poseQs[g].z!==qs[g].z||poseQs[g].w!==qs[g].w){poseQs[g].set(qs[g].x,qs[g].y,qs[g].z,qs[g].w);dirty=true;lastState=null;}}
    if(s.extractNonce!==lastExtract){lastExtract=s.extractNonce;if(s.extractNonce)extractSelected();}
    if(s.returnNonce!==lastReturn){lastReturn=s.returnNonce;if(s.returnNonce)returnParts(false);}
    if(s.returnAllNonce!==lastReturnAll){lastReturnAll=s.returnAllNonce;if(s.returnAllNonce)returnParts(true);}

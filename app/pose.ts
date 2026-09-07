@@ -19,29 +19,29 @@ export const POSE_PRESETS:{id:string;name:string;hint:string;pose:PoseState}[]=[
  {id:'legs-apart',name:'Legs apart',hint:'Abduct the thighs to study the medial thigh and perineum',pose:{...REST_POSE,leftLeg:.48,rightLeg:.48}},
 ];
 
-/** Joint pivots in atlas metres: torso unused, glenohumeral, hip, C0–C1. */
+/** Joint pivots: torso, GH, hip, C0-C1, then ST near the superior-medial scapula. */
 export const POSE_PIVOTS:[number,number,number][]=[
  [0,0,0],
- [.155,1.35,-.02],
- [-.155,1.35,-.02],
+ [.16,1.37,-.02],
+ [-.16,1.37,-.02],
  [.088,.92,.01],
  [-.088,.92,.01],
  [0,1.52,.02],
+ [.05,1.428,.02],
+ [-.05,1.428,.02],
 ];
 
-export type PoseGroupId=0|1|2|3|4|5;
+export type PoseGroupId=0|1|2|3|4|5|6|7;
 
 const arm= (cx:number):PoseGroupId=>cx>=0?1:2;
 const leg= (cx:number):PoseGroupId=>cx>=0?3:4;
+const scap=(cx:number):PoseGroupId=>cx>=0?6:7;
 
 /**
- * Rigid compartments around anatomical joints, not a full musculoskeletal sim.
- * Glenohumeral pose moves the free upper limb: humerus through the fingertips,
- * plus muscles whose bellies sit on that limb (deltoid, biceps, triceps, forearm,
- * hand). Scapular-origin cuff muscles (subscapularis, supra/infraspinatus, teres)
- * stay on the thorax with the scapula. Pec, serratus, and trapezius stay too.
- * Hip pose moves the free lower limb. Names beat bounding boxes so hanging hands
- * never join the thighs.
+ * Rigid compartments around anatomical joints. Glenohumeral pose moves the free
+ * upper limb, parented through scapulothoracic upward rotation at about 2:1 GH:ST.
+ * Cuff bones ride the scapula. Crossing muscles are two-bone skinned so origins
+ * stay and insertions follow. Hip pose moves the free lower limb.
  */
 export function poseGroupOf(name:string,cx:number,cy:number):PoseGroupId{
  const n=name.toLowerCase();
@@ -52,14 +52,16 @@ export function poseGroupOf(name:string,cx:number,cy:number):PoseGroupId{
  if(/toe|hallux|plantar|metatarsal|calcane|tarsal bone| of (left|right) foot\b|interosseous membrane of .*leg|fibularis|peroneus|tibialis|gastrocnemius|soleus|plantaris|popliteus|iliotibial|flexor digitorum longus|flexor digitorum brevis|extensor digitorum longus|extensor digitorum brevis|flexor accessorius/.test(n))return leg(cx);
  if(/biceps femoris|semimembranosus|semitendinosus|vastus|gracilis|adductor|rectus femoris|sartorius|tensor fasciae latae/.test(n))return /adductor pollicis/.test(n)?arm(cx):leg(cx);
 
- if(/subscapularis|supraspinatus|infraspinatus|teres minor|teres major|circumflex scapular|subscapular artery|subscapular vein|suprascapular/.test(n))return 0;
- if(/scapula|clavicle|pectoralis|serratus|latissimus|subclavius|trapezius|rhomboid|levator scapulae/.test(n))return 0;
+ if(/subscapularis|supraspinatus|infraspinatus|teres minor|teres major|circumflex scapular|subscapular artery|subscapular vein|suprascapular/.test(n))return scap(cx);
+ if(/\bscapula\b/.test(n))return scap(cx);
+ if(/clavicle|pectoralis|serratus|latissimus|subclavius|trapezius|rhomboid|levator scapulae/.test(n))return 0;
 
  if(/finger|thumb|pollicis|thenar|hypothenar|indicis| of (left|right) hand\b|metacarpal|palmar arch|palmar digital|palmar metacarpal|princeps pollicis|radialis indicis/.test(n)&&cy>0.5)return arm(cx);
  if(/\bscaphoid\b|\blunate\b|triquetral|triquetrum|pisiform|\bhamate\b|\bcapitate\b|trapezium|trapezoid|retinaculum of .*wrist|interosseous membrane of .*forearm/.test(n))return arm(cx);
  if(/carpi |palmaris|pronator|supinator|brachioradialis|anconeus|extensor digitorum|flexor digitorum|lumbrical of|interossei of .*hand/.test(n))return arm(cx);
  if(/(^| )(humerus|radius|ulna)\b/.test(n))return arm(cx);
- if(/deltoid|triceps|brachialis|coracobrachialis/.test(n))return arm(cx);
+ if(/deltoid branch/.test(n))return 0;
+ if(/part of .*deltoid|\bdeltoid$|triceps|brachialis|coracobrachialis/.test(n))return arm(cx);
  if(/\bbiceps brachii\b|\bbiceps\b/.test(n)&&!/femoris/.test(n))return arm(cx);
  if(/brachial artery|brachial vein|basilic|cephalic vein|antebrachial|circumflex humeral|deep brachial/.test(n)&&!/brachiocephalic/.test(n))return arm(cx);
 
@@ -78,6 +80,41 @@ export function poseIsRest(pose:PoseState){
  return pose.leftArm+pose.rightArm+pose.leftArmFwd+pose.rightArmFwd+pose.leftLeg+pose.rightLeg+Math.abs(pose.head)<0.02;
 }
 
+export function poseEquals(a:PoseState,b:PoseState){
+ return Math.abs(a.leftArm-b.leftArm)<.02&&Math.abs(a.rightArm-b.rightArm)<.02&&Math.abs(a.leftArmFwd-b.leftArmFwd)<.02&&Math.abs(a.rightArmFwd-b.rightArmFwd)<.02&&Math.abs(a.leftLeg-b.leftLeg)<.02&&Math.abs(a.rightLeg-b.rightLeg)<.02&&Math.abs(a.head-b.head)<.02;
+}
+
+/** Second pose group plus a vertex axis used to blend toward insertion or origin. */
+export function skinningOf(name:string,cx:number):{extra:PoseGroupId;axis:0|1;a:number;b:number}|null{
+ const n=name.toLowerCase();
+ if(/pectoralis major/.test(n))return {extra:arm(cx),axis:0,a:.025,b:.155};
+ if(/pectoralis minor/.test(n))return {extra:scap(cx),axis:1,a:1.27,b:1.39};
+ if(/serratus anterior/.test(n))return {extra:scap(cx),axis:0,a:.14,b:.06};
+ if(/\bdeltoid\b/.test(n)&&!/branch|artery|vein/.test(n))return {extra:scap(cx),axis:1,a:1.28,b:1.415};
+ if(/biceps brachii|coracobrachialis/.test(n))return {extra:scap(cx),axis:1,a:1.26,b:1.40};
+ if(/long head of .*triceps/.test(n))return {extra:scap(cx),axis:1,a:1.26,b:1.40};
+ if(/trapezius/.test(n))return {extra:scap(cx),axis:0,a:.03,b:.12};
+ if(/\bclavicle\b/.test(n))return {extra:scap(cx),axis:0,a:.02,b:.12};
+ if(/subclavius/.test(n))return {extra:scap(cx),axis:0,a:.04,b:.10};
+ if(/rhomboid/.test(n))return {extra:scap(cx),axis:0,a:.015,b:.075};
+ if(/levator scapulae/.test(n))return {extra:scap(cx),axis:1,a:1.53,b:1.40};
+ if(/subscapularis/.test(n))return {extra:arm(cx),axis:0,a:.14,b:.165};
+ if(/supraspinatus|infraspinatus/.test(n))return {extra:arm(cx),axis:0,a:.15,b:.185};
+ if(/teres minor/.test(n))return {extra:arm(cx),axis:0,a:.16,b:.19};
+ if(/teres major/.test(n))return {extra:arm(cx),axis:0,a:.14,b:.17};
+ if(/adductor/.test(n)&&!/hallucis|pollicis/.test(n))return {extra:0,axis:0,a:.09,b:.022};
+ if(/\bgracilis\b/.test(n))return {extra:0,axis:1,a:.42,b:.84};
+ if(/pectineus/.test(n))return {extra:leg(cx),axis:0,a:.03,b:.09};
+ if(/\bpsoas\b/.test(n))return {extra:leg(cx),axis:0,a:.02,b:.10};
+ if(/iliacus/.test(n))return {extra:leg(cx),axis:1,a:1.02,b:.83};
+ return null;
+}
+
+export function skinWeight(axisValue:number,a:number,b:number){
+ const t=Math.min(1,Math.max(0,(axisValue-a)/(b-a||1)));
+ return t*t*(3-2*t);
+}
+
 interface Quat {x:number;y:number;z:number;w:number}
 const I:Quat={x:0,y:0,z:0,w:1};
 
@@ -94,12 +131,15 @@ function qmul(a:Quat,b:Quat):Quat{
  };
 }
 
-/** Six world-space quaternions, group order torso / L arm / R arm / L leg / R leg / head. */
+/** Eight world-space quaternions: torso, arms, legs, head, L/R scapula. GH:ST about 2:1. */
 export function poseQuaternions(pose:PoseState):Quat[]{
- const lArm=qmul(qaxis(1,0,0,-pose.leftArmFwd*1.45),qaxis(0,0,1,pose.leftArm*2.65));
- const rArm=qmul(qaxis(1,0,0,-pose.rightArmFwd*1.45),qaxis(0,0,1,-pose.rightArm*2.65));
+ const ghAbd=2.094,ghFlex=1.35,stUp=1.047,stTilt=0.12,stFlex=0.28,stPro=0.32;
+ const lArm=qmul(qaxis(1,0,0,-pose.leftArmFwd*ghFlex),qaxis(0,0,1,pose.leftArm*ghAbd));
+ const rArm=qmul(qaxis(1,0,0,-pose.rightArmFwd*ghFlex),qaxis(0,0,1,-pose.rightArm*ghAbd));
  const lLeg=qaxis(0,0,1,pose.leftLeg*0.7);
  const rLeg=qaxis(0,0,1,-pose.rightLeg*0.7);
  const head=qaxis(0,1,0,pose.head*0.9);
- return [I,lArm,rArm,lLeg,rLeg,head];
+ const lScap=qmul(qaxis(1,0,0,-pose.leftArmFwd*stFlex-pose.leftArm*stTilt),qmul(qaxis(0,1,0,pose.leftArmFwd*stPro),qaxis(0,0,1,pose.leftArm*stUp)));
+ const rScap=qmul(qaxis(1,0,0,-pose.rightArmFwd*stFlex-pose.rightArm*stTilt),qmul(qaxis(0,1,0,-pose.rightArmFwd*stPro),qaxis(0,0,1,-pose.rightArm*stUp)));
+ return [I,lArm,rArm,lLeg,rLeg,head,lScap,rScap];
 }

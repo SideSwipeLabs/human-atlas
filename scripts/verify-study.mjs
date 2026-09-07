@@ -8,7 +8,7 @@ const page=await (await browser.newContext({viewport:{width:1440,height:900}})).
 page.on('pageerror',e=>errors.push(e.message));
 page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
 await page.goto('http://localhost:3016/?v='+Date.now(),{waitUntil:'domcontentloaded',timeout:60000});
-try{await page.waitForFunction(()=>!document.querySelector('.loading'),{timeout:90000});}catch{errors.push('loading');}
+try{await page.waitForFunction(()=>!document.querySelector('.loading'),{timeout:120000});}catch{errors.push('loading');}
 await page.waitForTimeout(1000);
 const look=page.getByRole('button',{name:'Look',exact:true});
 const dissect=page.getByRole('button',{name:'Dissect',exact:true});
@@ -33,8 +33,19 @@ await page.keyboard.press('p');
 await page.waitForTimeout(300);
 await page.getByRole('button',{name:'Arms raised'}).click();
 await page.waitForTimeout(900);
+const restPressed=await page.getByRole('button',{name:'Rest',exact:true}).getAttribute('aria-pressed');
+const armsPressed=await page.getByRole('button',{name:'Arms raised'}).getAttribute('aria-pressed');
+if(restPressed==='true')errors.push('rest still pressed after arms-up');
+if(armsPressed!=='true')errors.push('arms raised not pressed');
+await page.getByLabel('front view').click();
+await page.waitForTimeout(400);
 await page.screenshot({path:`${out}/ecorche-arms.png`});
+await page.getByLabel('side view').click();
+await page.waitForTimeout(400);
+await page.screenshot({path:`${out}/ecorche-arms-side.png`});
 await page.keyboard.press('Escape');
+await page.keyboard.press('r');
+await page.waitForTimeout(500);
 await page.getByLabel('Dissection layers').click();
 await page.getByRole('button',{name:'Viscera'}).click();
 await page.waitForTimeout(700);

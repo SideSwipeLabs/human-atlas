@@ -32,10 +32,6 @@ function ratio(value:string|null){
  return Math.min(1,Math.max(0,n/100));
 }
 
-function samePose(a:PoseState,b:PoseState){
- return a.leftArm===b.leftArm&&a.rightArm===b.rightArm&&a.leftArmFwd===b.leftArmFwd&&a.rightArmFwd===b.rightArmFwd&&a.leftLeg===b.leftLeg&&a.rightLeg===b.rightLeg&&a.head===b.head;
-}
-
 export function parseHash(hash:string):AtlasHash{
  const raw=hash.startsWith('#')?hash.slice(1):hash;
  if(!raw)return {};
@@ -67,7 +63,10 @@ export function serializeHash(input:{concept?:string|null;part?:string|null;stat
  if(input.state.isolate)params.set('iso','1');
  if(input.state.plane&&input.state.plane!=='transverse')params.set('plane',input.state.plane);
  const pose=input.state.pose??REST;
- const poseId=Object.keys(PRESETS).find(id=>samePose(PRESETS[id],pose));
+ const poseId=Object.keys(PRESETS).find(id=>{
+  const p=PRESETS[id];
+  return Math.abs(p.leftArm-pose.leftArm)<.02&&Math.abs(p.rightArm-pose.rightArm)<.02&&Math.abs(p.leftArmFwd-pose.leftArmFwd)<.02&&Math.abs(p.rightArmFwd-pose.rightArmFwd)<.02&&Math.abs(p.leftLeg-pose.leftLeg)<.02&&Math.abs(p.rightLeg-pose.rightLeg)<.02&&Math.abs(p.head-pose.head)<.02;
+ });
  if(poseId)params.set('pose',poseId);
  if(input.state.region&&input.state.region!=='full')params.set('region',input.state.region);
  const same=input.state.visible.length===input.defaultVisible.length&&input.defaultVisible.every(id=>input.state.visible.includes(id));

@@ -7,7 +7,7 @@ import {searchAnatomy} from '../app/search.ts';
 import {parseHash,serializeHash} from '../app/url-state.ts';
 import {buildConceptIndex,relatedConcepts} from '../app/related.ts';
 import {DEFAULT_VISIBLE} from '../app/anatomy.ts';
-import {poseGroupOf,poseIsRest,poseQuaternions,REST_POSE} from '../app/pose.ts';
+import {POSE_PRESETS,poseEquals,poseGroupOf,poseIsRest,poseQuaternions,REST_POSE,skinningOf} from '../app/pose.ts';
 import {displaySystem,focusElements} from '../app/classify.ts';
 
 for (const file of ['atlas.json']) {
@@ -43,6 +43,7 @@ for (const file of ['atlas.json']) {
   assert.equal(parsed.isolate,true);
   assert.equal(parsed.pose?.leftArm,.72);
   assert.equal(parseHash('#region=axilla&pose=arms-up').region,'axilla');
+  assert.equal(parseHash('#pose=arms-up').pose?.leftArm,.72);
   assert.deepEqual(parsed.systems,['skeletal']);
   assert.equal(parseHash('').concept,undefined);
   assert.equal(serializeHash({state:{view:'three-quarter',xray:false,clip:0,isolate:false,visible:DEFAULT_VISIBLE,pose:{leftArm:0,rightArm:0,leftArmFwd:0,rightArmFwd:0,leftLeg:0,rightLeg:0,head:0}},defaultVisible:DEFAULT_VISIBLE}),'');
@@ -66,13 +67,22 @@ for (const file of ['atlas.json']) {
   assert.equal(named['left triquetral'],1);
   assert.equal(named['right triquetral'],2);
   assert.equal(named['left extensor indicis'],1);
-  assert.equal(named['left subscapularis'],0);
-  assert.equal(named['left supraspinatus'],0);
-  assert.equal(named['left teres major'],0);
+  assert.equal(named['left subscapularis'],6);
+  assert.equal(named['left supraspinatus'],6);
+  assert.equal(named['left teres major'],6);
+  assert.equal(named['left scapula'],6);
+  assert.equal(named['right scapula'],7);
   assert.equal(named['flexor retinaculum of left wrist'],1);
   assert.equal(named['interosseous membrane of left forearm'],1);
   assert.equal(named['abdominal part of left pectoralis major'],0);
   assert.equal(named['left serratus anterior'],0);
+  assert.equal(named['left pectoralis minor'],0);
+  assert.equal(named['left rhomboid major'],0);
+  assert.equal(skinningOf('Sternocostal part of left pectoralis major',0.1)?.extra,1);
+  assert.equal(skinningOf('Left clavicle',0.08)?.extra,6);
+  assert.equal(skinningOf('Acromial part of left deltoid',0.19)?.extra,6);
+  assert.equal(skinningOf('Left serratus anterior',0.1)?.extra,6);
+  assert.ok((skinningOf('Left serratus anterior',0.1)?.a??0)>(skinningOf('Left serratus anterior',0.1)?.b??1));
   for(const [k,g] of Object.entries(named)){
     if(/finger|thumb/.test(k)&&!/toe|foot|hallux/.test(k))assert.ok(g===1||g===2,k);
     if(/phalanx of .*toe|hallux|metatarsal/.test(k))assert.ok(g===3||g===4,k);
@@ -83,7 +93,6 @@ for (const file of ['atlas.json']) {
   assert.equal(displaySystem(tib),'muscular');
   assert.equal(searchAnatomy(atlas,'skin').every(c=>c.name.toLowerCase()!=='skin'),true);
   assert.ok(named['acromial part of left deltoid']===1||named['left deltoid']===1||Object.entries(named).some(([k,g])=>k.includes('deltoid')&&k.includes('left')&&g===1));
-  assert.equal(named['left scapula'],0);
   const lid=Object.entries(named).find(([k])=>k.includes('tarsal plate'));
   if(lid)assert.equal(lid[1],5);
   const third=atlas.parts.find(p=>p.name.toLowerCase()==='third ventricle');
@@ -110,7 +119,14 @@ for (const file of ['atlas.json']) {
   }
 
   assert.ok(poseIsRest(REST_POSE));
+  assert.ok(poseEquals(REST_POSE,{...REST_POSE}));
+  assert.ok(!poseEquals(REST_POSE,{...REST_POSE,leftArm:.72}));
+  assert.ok(poseEquals(POSE_PRESETS.find(p=>p.id==='legs-apart').pose,{...REST_POSE,leftLeg:.48,rightLeg:.48}));
+  assert.ok(poseEquals(POSE_PRESETS.find(p=>p.id==='arms-fwd').pose,{...REST_POSE,leftArmFwd:.78,rightArmFwd:.78}));
+  assert.equal(poseQuaternions(REST_POSE).length,8);
   const raised=poseQuaternions({...REST_POSE,leftArm:1});
+  assert.ok(Math.abs(raised[6].z)>0.2);
+  assert.ok(Math.abs(raised[1].z)>Math.abs(raised[6].z));
   assert.ok(Math.abs(raised[1].z)>0.4);
   assert.equal(raised[0].w,1);
   const index=buildConceptIndex(atlas);
